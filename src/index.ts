@@ -24,64 +24,64 @@ import bodyParser = require('body-parser')
 const router = express.Router()
 
 const main = async () => {
-    app.use(bodyParser.json())
-    app.use(cors({origin: process.env.FRONTEND_SERVER, credentials: true}))
+  app.use(bodyParser.json())
+  app.use(cors({origin: process.env.FRONTEND_SERVER, credentials: true}))
 
-    await createConnection({
-        type: 'postgres',
-        host: process.env.DB_HOST as string,
-        port: process.env.DB_PORT as any,
-        username: process.env.DB_USER as string,
-        password: process.env.DB_PWD as string,
-        database: process.env.DB_NAME as string,
-        synchronize: true,
-        entities: [User, Query, Order],
-        logging: true,
+  await createConnection({
+    type: 'postgres',
+    host: process.env.DB_HOST as string,
+    port: process.env.DB_PORT as any,
+    username: process.env.DB_USER as string,
+    password: process.env.DB_PWD as string,
+    database: process.env.DB_NAME as string,
+    synchronize: true,
+    entities: [User, Query, Order],
+    logging: true,
+  })
+
+  const RedisStore = connectRedis(session)
+  const redisClient = redis.createClient({port: 6379, host: 'localhost'});
+
+  app.use(
+    session({
+      name: `${process.env.SESSION_NAME}`,
+      store: new RedisStore({client: redisClient, disableTouch: true}),
+      saveUninitialized: false,
+      secret: `${process.env.SESSION_SECRET}`, //add to env file
+      resave: false,
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24, //1 day
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false // for production
+      }
     })
+  )
 
-    const RedisStore = connectRedis(session)
-    const redisClient = redis.createClient({port: 6379, host: 'localhost'});
+  router.put('/user/session', SessionController.create)
+  router.get('/user/session', isAuthenticated, SessionController.show)
+  router.delete('/user/session', isAuthenticated, SessionController.destroy)
 
-    app.use(
-        session({
-            name: `${process.env.SESSION_NAME}`,
-            store: new RedisStore({client: redisClient, disableTouch: true}),
-            saveUninitialized: false,
-            secret: `${process.env.SESSION_SECRET}`, //add to env file
-            resave: false,
-            cookie: {
-                maxAge: 1000 * 60 * 60 * 24, //1 day
-                httpOnly: true,
-                sameSite: 'lax',
-                secure: false // for production
-            }
-        })
-    )
+  router.post('/user', UserController.create)
+  router.get('/user', isAuthenticated, UserController.index)
+  router.put('/user', isAuthenticated, UserController.update)
 
-    router.put('/user/session', SessionController.create)
-    router.get('/user/session', isAuthenticated, SessionController.show)
-    router.delete('/user/session', isAuthenticated, SessionController.destroy)
+  router.post('/user/query', isAuthenticated, QueryController.create)
+  router.get('/user/query', isAuthenticated, QueryController.index)
 
-    router.post('/user', UserController.create)
-    router.get('/user', isAuthenticated, UserController.index)
-    router.put('/user', isAuthenticated, UserController.update)
+  router.post('/user/order', isAuthenticated, OrderController.create)
+  router.get('/user/order/cart-items', isAuthenticated, OrderController.fetchCartItems)
+  router.post('/user/order/cart-items', isAuthenticated, OrderController.updateIndividualCartItems)
+  router.get('/user/order', isAuthenticated, OrderController.fetch)
+  router.delete('/user/order/:id', isAuthenticated, OrderController.destroy)
 
-    router.post('/user/query', isAuthenticated, QueryController.create)
-    router.get('/user/query', isAuthenticated, QueryController.index)
+  //
 
-    router.post('/user/order', isAuthenticated, OrderController.create)
-    router.get('/user/order/cart-items', isAuthenticated, OrderController.fetchCartItems)
-    router.post('/user/order/cart-items',isAuthenticated, OrderController.updateIndividualCartItems)
-    router.get('/user/order', isAuthenticated, OrderController.fetch)
-    router.delete('/user/order/:id', isAuthenticated, OrderController.destroy)
+  app.use('/api', router)
 
-    //
-
-    app.use('/api', router)
-
-    app.listen(port, () => {
-        console.log(`App listening at http://localhost:${port}/api`)
-    })
+  app.listen(port, () => {
+    console.log(`App listening at http://localhost:${port}/api`)
+  })
 }
 
 main()

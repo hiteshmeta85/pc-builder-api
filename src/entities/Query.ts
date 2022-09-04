@@ -1,30 +1,30 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn , ManyToOne} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne} from "typeorm";
 import {User} from "./User";
 
 @Entity()
 export class Query {
 
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-    @Column()
-    title!: string;
+  @Column()
+  title!: string;
 
-    @Column()
-    description!: string;
+  @Column()
+  description!: string;
 
-    @Column({default: false})
-    status: boolean;
+  @Column({default: false})
+  status: boolean;
 
-    @Column({default: null})
-    reply: string;
+  @Column({default: null})
+  reply: string;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-    @ManyToOne(() => User , user => user.queries)
-    user: User;
+  @ManyToOne(() => User, user => user.queries)
+  user: User;
 }
